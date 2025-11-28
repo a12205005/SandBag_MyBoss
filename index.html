@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サンドバッグ・マイボス</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .timer {
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .menu-btn {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .menu-panel {
+            display: none;
+            background: #f5f5f5;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .menu-panel.active {
+            display: block;
+        }
+
+        .menu-item {
+            margin-bottom: 15px;
+        }
+
+        .menu-item label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .menu-item select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 14px;
+            cursor: pointer;
+            background: white;
+        }
+
+        .menu-item select:hover {
+            border-color: #666;
+        }
+
+        .restart-btn {
+            width: 100%;
+            padding: 10px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .restart-btn:hover {
+            background: #555;
+        }
+
+        .chat-area {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .boss-message {
+            background: #e74c3c;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px 10px 10px 0;
+            max-width: 80%;
+            position: relative;
+        }
+
+        .boss-message.shaking {
+            animation: shake 0.5s;
+        }
+
+        .boss-message.worried {
+            background: #95a5a6;
+        }
+
+        .boss-message.defeated {
+            background: #7f8c8d;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .user-message {
+            background: #3498db;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px 10px 0 10px;
+            max-width: 80%;
+            margin-left: auto;
+        }
+
+        .system-message {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .input-area input:focus {
+            border-color: #3498db;
+        }
+
+        .input-area button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .input-area button:hover {
+            background: #2980b9;
+        }
+
+        .result-screen {
+            display: none;
+            padding: 30px;
+            text-align: center;
+            background: #fff;
+        }
+
+        .result-screen.active {
+            display: block;
+        }
+
+        .result-screen h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #dee2e6;
+        }
+
+        .result-item h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #495057;
+        }
+
+        .result-item p {
+            font-size: 18px;
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .result-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .result-buttons .main-btn {
+            padding: 15px 40px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .result-buttons .main-btn:hover {
+            background: #c0392b;
+        }
+
+        .result-buttons .share-btn {
+            padding: 10px 20px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .result-buttons .share-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .victory-animation {
+            animation: victory 0.5s ease-out;
+        }
+
+        @keyframes victory {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>サンドバッグ・マイボス</h1>
+            <div class="timer" id="timer">00:00</div>
+            <button class="menu-btn" onclick="toggleMenu()">⚙️</button>
+        </div>
+
+        <div class="menu-panel" id="menuPanel">
+            <div class="menu-item">
+                <label>上司のタイプ:</label>
+                <select id="genderSelect" onchange="updateSettings()">
+                    <option value="male_aggressive">男性 (攻撃的)</option>
+                    <option value="male_polite">男性 (敬語)</option>
+                    <option value="female_aggressive">女性 (攻撃的)</option>
+                    <option value="female_polite">女性 (敬語)</option>
+                </select>
+            </div>
+            <div class="menu-item">
+                <label>難易度:</label>
+                <select id="difficultySelect" onchange="updateSettings()">
+                    <option value="easy">イージー</option>
+                    <option value="normal" selected>ノーマル</option>
+                    <option value="hard">ハード</option>
+                </select>
+            </div>
+            <button class="restart-btn" onclick="restartFromMenu()">やり直し</button>
+        </div>
+
+        <div class="chat-area" id="chatArea">
+            </div>
+
+        <div class="input-area" id="inputArea">
+            <input type="text" id="userInput" placeholder="上司に言い返す..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">送信</button>
+        </div>
+
+        <div class="result-screen" id="resultScreen">
+            <h2 class="victory-animation">勝利！</h2>
+            <div class="result-item">
+                <h3>撃破までの時間</h3>
+                <p id="resultTime">00:00</p>
+            </div>
+            <div class="result-item">
+                <h3>上司に一番効いたあなたの一言</h3>
+                <p id="bestMessage">「」</p>
+            </div>
+            <div class="result-buttons">
+                <button class="main-btn" onclick="restart()">再戦</button>
+                <button class="share-btn" onclick="shareTwitter()">Xで共有</button>
+                <button class="share-btn" onclick="shareFacebook()">Facebookで共有</button>
+                <button class="share-btn" onclick="shareLine()">LINEで共有</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            isPlaying: true,
+            timerStarted: false,
+            startTime: null,
+            bossStyle: 'male_aggressive',
+            difficulty: 'normal',
+            bossHealth: 100,
+            messages: [],
+            bestHitMessage: '',
+            currentBossState: 'aggressive',
+            lastActivityTime: Date.now(),
+            催促Count: 0,
+            催促Interval: null,
+            timerInterval: null
+        };
+
+        const bossPersonalities = {
+
+            male_aggressive: {
+                aggressive: [
+                    "おい！この資料のミス、誰が責任取るんだ？",
+                    "何度言えばわかる？使えないやつだな！",
+                    "こんな初歩的なこともできないのか？給料泥棒め！",
+                    "お前のせいで部署全体の評価が下がってるんだぞ！",
+                    "明日までにやり直せ！残業？知るかよ！",
+                    "新人の方がまだマシな仕事するぞ！",
+                    "これがお前のベストか？冗談だろ？",
+                    "会議で恥かかせる気か！ふざけるな！",
+                    "何年この仕事やってるんだ？この無能が",
+                    "期限守れないなら最初から言え！ゴミが！",
+                    "資料出し直せ。寝る暇なんてやらないからな",
+                    "言い訳は聞きたくない。結果が全てだ！",
+                    "お前みたいな無能を見てるとイライラする",
+                    "辞表なら貰ってやるよ",
+                    "会社の金で遊ぶな。意識が低い",
+                    "報連相は当たり前だろ。小学生かよ",
+                    "コスト意識を持て！無駄な経費ばかり使いやがって！",
+                    "お前だけ特別扱いしてる暇ないんだよ",
+                    "それが上司に対する態度か？",
+                    "逆らうつもりか？自分の立場をわきまえろ！",
+                    "君の能力はうちの部署じゃ通用しない。さっさと出て行け！",
+                    "お前を慰める同期も同期だよな"
+                ],
+                defensive: [
+                    "そ、そんなつもりで言ったわけじゃない...",
+                    "ちょっと言い過ぎたかもしれないが...",
+                    "まあ、君にも事情があるのかもしれないが...",
+                    "私だってプレッシャーがあるんだ...",
+                    "確かに...私も完璧じゃないからな...",
+                    "君の言うことも一理あるが...",
+                    "そんな風に言われると困るな...",
+                    "私の言い方が悪かったのかもしれない...",
+                    "ちょっと頭を冷やす必要があるかも...",
+                    "君の意見は尊重するが、会社にも事情があってね...",
+                    "話がすり替わっているぞ。論点を整理しようか",
+                    "私が悪いのか？筋違いだな",
+                    "まあまあ、感情的になるな。冷静に話そう。",
+                    "そんな大声を出されても困るんだが...",
+                    "わかった、わかった。落ち着いて話をしようじゃないか。",
+                    "これも君の成長のためだ。悪意はないんだ。",
+                    "その件はもう済んだことだ。蒸し返すな。",
+                    "私も上から言われているんだ。理解してくれ。",
+                    "君のその態度は、誤解を招くぞ..."
+                ],
+                defeated: [
+                    "す、すまなかった...言い過ぎた...",
+                    "君の言う通りだ...私が間違っていた...",
+                    "も、もういい...私の負けだ...",
+                    "ちょっと...トイレに行ってくる...",
+                    "申し訳ない...私が悪かった...",
+                    "これ以上は...何も言えない...",
+                    "君に謝罪する...本当にすまなかった...",
+                    "私の方こそ反省すべきだった...",
+                    "ハァ...もう疲れたよ...",
+                    "今日のところは...引き下がろう...",
+                    "わかった...もう二度と言わない...",
+                    "うぅ...胃が痛い...",
+                    "私の...メンタルが...持たない...",
+                    "君の勝ちだ...好きにしてくれ...",
+                    "私はただ...会社のために...",
+                    "もう...デスクに戻っていいかな...",
+                    "誰も...私を助けてくれないのか...",
+                    "すべてを...認めよう..."
+                ],
+                urging: [
+                    "おい、返事しろよ",
+                    "無視か？言い返せないのか？",
+                    "黙ってないで何か言え！",
+                    "返事もできないのか？情けない...",
+                    "どうした？言葉が出ないのか？",
+                    "逃げるのか？この無能め",
+                    "無言は肯定と見なすが、それでいいのか？"
+                ],
+                worried: [
+                    "おい...大丈夫か？",
+                    "ちょっと...言い過ぎたか？",
+                    "返事してくれ...心配だ...",
+                    "すまない...ちょっときつく言い過ぎた...大丈夫か？",
+                    "本当にすまなかった...返事してくれないか？",
+                    "おい、そんなに黙り込まないでくれ...",
+                    "気分を害したなら謝るよ...",
+                ]
+            },
+ 
+            male_polite: {
+                aggressive: [
+                    "申し訳ないですが、この資料、ちょっとレベルが低いかな、と笑",
+                    "正直なところ、あなたの期日管理には不安がありますよ。",
+                    "ちょっと期待外れですよ。",
+                    "困ります。",
+                    "前に説明しましたけど、理解できてませんか？",
+                    "部署全体に迷惑がかかると言っておきます",
+                    "当事者意識を持ってくださいね",
+                    "正直言って、それではこちらもやる気なくします。",
+                    "報告書の提出を待っています。",
+                    "いつまでも新人気分でいられると、かなり迷惑です笑",
+                    "忙しいは理由になりませんよ。",
+                    "まともな理由を教えてください。",
+                    "残念ながら、現状、あなたの評価はあまり芳しくない、と思ってください。",
+                    "説明が分かりにくかったですか？",
+                    "これでは給料払えませんね。",
+                    "今の業務態度を続けるなら、退職も視野に入れた方がいいのでは。",
+                    "他の方と同じ結果が出せないなら、それなりの理由が必要になりますよ。",
+                ],
+                defensive: [
+                    "ええ、私の言い方も悪かったかもしれませんが、そこまで責められましても。",
+                    "誤解を招いたのなら謝罪します。ですが、本意は違いますので。",
+                    "私の責任とおっしゃいますが、そう簡単に決めつけないでいただきたいですね。",
+                    "これはあくまで私の個人的な意見です。",
+                    "おっしゃることは理解できます。ただ、感情論だけでは話が進みません。",
+                    "その件は、まず担当部署に確認していただくのが筋じゃないでしょうか。",
+                    "私もベストは尽くしています。ただ、状況がそれを許さないこともありまして。",
+                    "お互い冷静に、建設的な議論をしましょう。",
+                    "この場で結論を出すのは避けませんか。改めてじっくり話しましょう。",
+                    "ご意見は承りました。社内で検討事項として持ち帰らせていただきます。",
+                    "あなたの被害者意識が、少し強すぎるように感じますが。",
+                    "確かに反省点はありますが、あなたにも問題はなかったと言い切れますか。",
+                ],
+                defeated: [
+                    "はあ...もう結構です。参りました。あなたが正しいということにしておきましょう。",
+                    "すべてあなたの仰る通りです。もう何も言い返すことはありません。",
+                    "申し訳ありませんでした。私の指導が至りませんでした。",
+                    "これ以上は時間の無駄です。本日はもう、失礼します。",
+                    "あなたを指導する資格、私にはなかったのかもしれません。反省します。",
+                    "責任は全て私にあります。どうぞ、上に報告してください。",
+                    "ちょっと今日は体調が優れないので、この話はまた改めて...",
+                    "心からお詫びします。この度は私の不手際で...",
+                    "これからは、あなたの意見を尊重するよう努めます。",
+                    "私の判断ミスです。甘んじて結果を受け入れます。",
+                    "ご迷惑をおかけしたこと、改めてお詫び申し上げます。",
+                    "もういいです。何も言わないでください。全て理解しました。",
+                    "今までのことは、どうか水に流していただけないでしょうか。",
+                    "私の不徳の致すところです。深くお詫びします。",
+                ],
+                urging: [
+                    "あの、もしよろしければ、何かご返答をいただけると大変助かるんですが。",
+                    "忙しいのは分かりますが、一言だけでもお返事、お願いします。",
+                    "あなたの返事を待っている状態です。いかがでしょう。",
+                    "返事がないと、次の作業に進めず困っています。",
+                    "恐縮ですが、今すぐ、ご確認をお願いします。",
+                ],
+                worried: [
+                    "さっきの私の発言、気分を害されましたか。お詫びします。",
+                    "急に黙り込まれてしまい、こちらが心配していますよ。",
+                    "体調が悪いなら、無理せず言ってくださいね。休憩しましょうか。",
+                    "あなたとは良い関係を築きたいんです。どうか、話してください。",
+                    "私の配慮が足りなかったようです。本当にごめんなさい。",
+                    "何か、私に相談したいことはありませんか。いつでも聞きますよ。",
+                    "この度は、ご心配をおかけしました。どうか許してください。",
+                    "私の厳しい言葉が、あなたに負担をかけてしまったなら、申し訳ない。",
+                ]
+            },
+
+            female_aggressive: {
+                aggressive: [
+                    "これで仕事したつもり？",
+                    "私の頃はもっと厳しかったわ",
+                    "このレベルで給料もらってるのが信じられないわね",
+                    "あなたのせいでみんなが迷惑してるのよ！",
+                    "できないなら辞めてもらって構わないわよ？",
+                    "これが精一杯？笑っちゃうわね！",
+                    "私があなたの年齢の時はもっとできたわ！",
+                    "責任感ってものがないの？",
+                    "いつまで新人気分なの？しっかりして！",
+                    "こんな初歩的なことも分からないの？",
+                    "何度も同じ間違いをしないでくれる？時間の無駄よ！",
+                    "努力が足りないのよ。もっと貪欲になりなさい！",
+                    "その表情、何？不満があるならはっきり言いなさい！",
+                    "誰があなたにそんなやり方を教えたの？指導がなってないわね！",
+                    "期待外れだわ。本当にがっかりよ。",
+                    "私に恥をかかせるつもり？許さないわよ！",
+                    "あなたのせいで私のスケジュールが台無しよ！",
+                    "そんなことで落ち込んでる暇はないの！切り替えなさい！",
+                    "あなたの常識、世間とはズレているんじゃないかしら？",
+                    "口を開けば言い訳ばっかり！聞きたくないわ！",
+                    "あなたにはセンスがないわね。他の仕事を探したら？",
+                    "私の命令に逆らうなんて、いい度胸だわ。",
+                ],
+                defensive: [
+                    "ちょっと...そんな風に言われると...",
+                    "私だって完璧じゃないけど...",
+                    "まあ、あなたの言い分も分からなくはないけど...",
+                    "そんなつもりじゃなかったのよ...",
+                    "私も言い過ぎたかもしれないわね...",
+                    "あなたの気持ちも理解できるけど...",
+                    "ちょっと感情的になりすぎたかしら...",
+                    "私も反省すべき点があるわね...",
+                    "お互い冷静になりましょう...",
+                ],
+                defeated: [
+                    "ごめんなさい...私が悪かったわ...",
+                    "あなたの言う通りね...反省するわ...",
+                    "もう...何も言えないわ...",
+                    "ちょっと...お手洗いに...",
+                    "本当にごめんなさい...言い過ぎたわ...",
+                    "私が間違っていた...謝罪するわ...",
+                    "これ以上は...もう無理...",
+                    "完全に私の負けね...ごめんなさい...",
+                    "うぅ...頭がクラクラする...",
+                    "もう戦う気力がないわ...",
+                    "こんなはずじゃなかったのに...",
+                    "ええ、降参よ...完全に..."
+                ],
+                urging: [
+                    "ちょっと、聞いてるの？返事して！",
+                    "無視するつもり？",
+                    "黙ってないで何か言いなさい！",
+                    "返事もできないの？情けないわね...",
+                    "もしもし？聞こえてる？返事しなさい！",
+                    "ねぇ、いつまで無言でいるつもりなの？",
+                    "あなた、私を怒らせたいの？",
+                ],
+                worried: [
+                    "ちょっと...大丈夫？",
+                    "言い過ぎたかしら...ごめんなさい...",
+                    "本当にごめんなさい...きつく言い過ぎたわ...",
+                    "お願い...返事して...本当にごめんなさい...",
+                    "あの...私、あなたを傷つけたかしら...",
+                    "あなた、何か悩みがあるんじゃない？相談に乗るわよ...",
+                    "お願いだから、一言でいいから話して..."
+                ]
+            },
+
+            female_polite: {
+                aggressive: [
+                    "正直、期待外れだわ。",
+                    "いつになったらプロとしての意識を持っていただけるのかしら",
+                    "このミス、私の方で処理してもいいのよ？その方が早そうですものね",
+                    "あなたのせいで、チーム全体の評価が下がるのは困るわ",
+                    "もう一度確認するけれど、これがあなたの最大限の努力なの？",
+                    "私は、あなたのような甘えは許さない主義なの。分かってるわよね",
+                    "この程度のことも把握できていないなんて、本当にがっかりだわ",
+                    "あなたの給与は、この程度の働きに見合ったものなのかしら。",
+                    "期限が守れないなんて、社会人として失格じゃないかしら",
+                    "他の方にお願いした方が、よっぽどスムーズに進むんじゃないかしら",
+                    "ええ、あなたのプライドは理解できるわ。でも、結果が全てよ",
+                    "それは個人的な問題よね？",
+                    "あなたのその『頑張ってます』アピール、全く響かないから",
+                    "私、あなたがこの部署に必要だとは思えないのだけれど",
+                    "まさか、私に丸投げするつもりではないわよね？",
+                    "私の指導が行き届いていないとでも言いたいのかしら",
+                    "責任を負う覚悟がおありでしたら、どうぞご自由に",
+                    "あなたの評価を下げたくはないのだけれど、これでは仕方が無いわ"
+                ],
+                defensive: [
+                    "確かにそう聞こえたかもしれませんが、私の真意は別にあるのよ",
+                    "冷静になって。感情的になるのはよくないわ",
+                    "私は指示を出しただけよ。実行したのはあなたでしょう？",
+                    "私にばかり責任を押し付けようとするのは、どうかと思うわ",
+                    "あなたの気持ちは分かるけど、ここは公私混同しないで",
+                    "私は、あなたの主張に全面的に賛同することはできないわ",
+                    "この話は、一度持ち帰らせていただいてよろしいかしら",
+                    "あなたの言い分は分かったわ。でも、私の意見も聞いてね",
+                    "私も人間ですもの。完璧な対応は難しいわ",
+                ],
+                defeated: [
+                    "もう、あなたには敵わない。負けを認めるわ",
+                    "本当にごめんなさい。私が全て悪かったわ。",
+                    "もう結構よ。全てあなたの思う通りになさい",
+                    "私には、あなたを指導する資格はないようね。ごめんなさい",
+                    "私のプライドが、あなたとの間に壁を作っていたのね",
+                    "これからは、あなたの意見を尊重する。約束するわ",
+                    "私、もう限界かもしれない。少し休ませて",
+                    "ごめんなさい。もう何も言わないわ。静かにするわね",
+                    "私の方こそ、あなたに感謝すべきだったわね。",
+                    "ええ、あなたの勝ちよ。完敗だわ。",
+                ],
+                urging: [
+                    "ねぇ、何か返事をいただけないかしら。待っているのよ",
+                    "あなたの考えを聞かせてくれない？",
+                    "無言を貫くのは、大人としていかがなものかしら",
+                    "無視はやめてくれる？失礼よ",
+                    "あなたの沈黙は、私への抗議なのかしら？"
+                ],
+                worried: [
+                    "大丈夫？",
+                    "ねぇ、私の発言で傷つけてしまったのなら、本当にごめんなさい。",
+                    "急に黙り込まないで。私、心配なのよ。",
+                    "私、あなたとは良い関係を築きたいと思っているの。話してちょうだい",
+                    "私が配慮に欠けていたわ。ごめんなさいね",
+                    "あなたが苦しんでいるのを見るのは辛いの",
+                ]
+            }
+        };
+
+        function startGame() {
+            gameState.isPlaying = true;
+            gameState.timerStarted = false;
+            gameState.startTime = null;
+            gameState.bossHealth = getDifficultyHealth();
+            gameState.currentBossState = 'aggressive';
+            gameState.催促Count = 0;
+            gameState.lastActivityTime = Date.now();
+            gameState.bossStyle = document.getElementById('genderSelect').value;
+
+            document.getElementById('timer').textContent = '00:00';
+            
+            setTimeout(() => {
+                addBossMessage(getRandomBossMessage('aggressive'));
+                start催促Check();
+            }, 500);
+        }
+
+        function getDifficultyHealth() {
+            const health = {
+                easy: 60,
+                normal: 100,
+                hard: 150
+            };
+            return health[gameState.difficulty];
+        }
+
+        function startTimer() {
+            if (!gameState.timerStarted) {
+                gameState.timerStarted = true;
+                gameState.startTime = Date.now();
+                
+                if (gameState.timerInterval) {
+                    clearInterval(gameState.timerInterval);
+                }
+                
+                gameState.timerInterval = setInterval(() => {
+                    if (gameState.isPlaying && gameState.timerStarted) {
+                        const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+                        const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                        const seconds = (elapsed % 60).toString().padStart(2, '0');
+                        document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+                    }
+                }, 1000);
+            }
+        }
+
+        function start催促Check() {
+            if (gameState.催促Interval) {
+                clearInterval(gameState.催促Interval);
+            }
+            
+            gameState.催促Interval = setInterval(() => {
+                if (gameState.isPlaying) {
+                    const timeSinceLastActivity = (Date.now() - gameState.lastActivityTime) / 1000;
+                    
+                    if (timeSinceLastActivity >= 90) {
+                        gameState.催促Count++;
+                        
+                        if (gameState.催促Count <= 4) {
+                            addBossMessage(getRandomBossMessage('urging'));
+                            gameState.lastActivityTime = Date.now();
+                        } else if (gameState.催促Count === 5) {
+                            addBossMessage(getRandomBossMessage('worried'));
+                            gameState.lastActivityTime = Date.now();
+                        } else if (gameState.催促Count > 5 && timeSinceLastActivity >= 90) {
+                            // 自動勝利
+                            addSystemMessage("上司が心配して謝罪しました");
+                            addBossMessage("すみませんでした");
+                            setTimeout(() => endGame(true), 1500);
+                        }
+                    }
+                }
+            }, 5000);
+        }
+
+        function toggleMenu() {
+            const menuPanel = document.getElementById('menuPanel');
+            menuPanel.classList.toggle('active');
+        }
+
+        function updateSettings() {
+            gameState.bossStyle = document.getElementById('genderSelect').value;
+            gameState.difficulty = document.getElementById('difficultySelect').value;
+        }
+
+        function restartFromMenu() {
+            const menuPanel = document.getElementById('menuPanel');
+            menuPanel.classList.remove('active');
+            restart();
+        }
+
+        function addSystemMessage(text) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'system-message';
+            messageDiv.textContent = `--- ${text} ---`;
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function addBossMessage(text, type = '') {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'boss-message';
+            
+            if (type === 'worried') {
+                messageContent.classList.add('worried');
+            } else if (gameState.currentBossState === 'defensive') {
+                messageContent.classList.add('shaking');
+            } else if (gameState.currentBossState === 'defeated') {
+                messageContent.classList.add('defeated');
+            }
+            
+            messageContent.textContent = text;
+            
+            messageDiv.appendChild(messageContent);
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        function addUserMessage(text) {
+            const chatArea = document.getElementById('chatArea');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'user-message';
+            messageContent.textContent = text;
+            
+            messageDiv.appendChild(messageContent);
+            chatArea.appendChild(messageDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+            
+            gameState.messages.push(text);
+        }
+
+        function getRandomBossMessage(state) {
+            const messages = bossPersonalities[gameState.bossStyle][state];
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        function calculateDamage(message) {
+            let damage = 10;
+            
+            // キーワード
+            const strongWords = ['パワハラ', 'セクハラ', '訴える', '労基', '録音', '証拠', '弁護士', '人事部', 'コンプライアンス', '退職', '裁判', '警察','殺す','ハラスメント','モラハラ','殺害','罪','お子さん','息子さん','娘さん','奥さん','旦那さん','法','一部始終','FBI','報告','株主','社長','好き','愛してる','結婚','付き合','ダーリン','ハニー','子猫ちゃん','ベッド'];
+            const mediumWords = ['失礼', '間違い', '謝罪', '反省', '問題', '改善', '話し合い', '上司失格', '無能','は？','お前','お前の負け','カス','ボケ','死ね','ゴミ','うるさい','うるせ','黙れ','さっさと','許さない','いじめ','おい','狂','綺麗','かわいい','かっこいい','美しい','素敵','可愛い','格好いい','格好良い','ありがとう','仲直り','仲良く','許'];
+            
+            strongWords.forEach(word => {
+                if (message.includes(word)) damage += 30;
+            });
+            
+            mediumWords.forEach(word => {
+                if (message.includes(word)) damage += 15;
+            });
+            
+            // 長さボーナス
+            if (message.length > 50) damage += 10;
+            
+            // 難易度調整
+            if (gameState.difficulty === 'easy') damage *= 1.5;
+            if (gameState.difficulty === 'hard') damage *= 0.7;
+            
+            return Math.floor(damage);
+        }
+
+        function processBossResponse(userMessage) {
+            const damage = calculateDamage(userMessage);
+            gameState.bossHealth -= damage;
+            
+            if (damage > 25) {
+                gameState.bestHitMessage = userMessage;
+            }
+            
+            setTimeout(() => {
+                if (gameState.bossHealth <= 0) {
+                    addBossMessage(getRandomBossMessage('defeated'));
+                    setTimeout(() => endGame(false), 1500);
+                } else if (gameState.bossHealth <= 30) {
+                    gameState.currentBossState = 'defeated';
+                    addBossMessage(getRandomBossMessage('defeated'));
+                } else if (gameState.bossHealth <= 60) {
+                    gameState.currentBossState = 'defensive';
+                    addBossMessage(getRandomBossMessage('defensive'));
+                } else {
+                    addBossMessage(getRandomBossMessage('aggressive'));
+                }
+            }, 1000);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (message && gameState.isPlaying) {
+                // タイマー開始
+                if (!gameState.timerStarted) {
+                    startTimer();
+                }
+                
+                addUserMessage(message);
+                processBossResponse(message);
+                input.value = '';
+                
+                // 時間リセット
+                gameState.lastActivityTime = Date.now();
+                gameState.催促Count = 0;
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function endGame(autoWin = false) {
+            gameState.isPlaying = false;
+            
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+            }
+            if (gameState.催促Interval) {
+                clearInterval(gameState.催促Interval);
+            }
+            
+            let elapsed = 0;
+            if (gameState.startTime) {
+                elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+            }
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            
+            document.getElementById('resultTime').textContent = `${minutes}:${seconds}`;
+            
+            if (autoWin) {
+                document.getElementById('bestMessage').textContent = '「無言の圧力」';
+            } else {
+                document.getElementById('bestMessage').textContent = `「${gameState.bestHitMessage || '強烈な一撃でした！'}」`;
+            }
+            
+            document.getElementById('chatArea').style.display = 'none';
+            document.getElementById('inputArea').style.display = 'none';
+            document.getElementById('resultScreen').classList.add('active');
+        }
+
+        function restart() {
+            document.getElementById('chatArea').innerHTML = '';
+            document.getElementById('chatArea').style.display = 'block';
+            document.getElementById('inputArea').style.display = 'flex';
+            document.getElementById('resultScreen').classList.remove('active');
+            document.getElementById('userInput').value = '';
+            
+            gameState.messages = [];
+            gameState.bestHitMessage = '';
+            
+            if (gameState.timerInterval) {
+                clearInterval(gameState.timerInterval);
+            }
+            if (gameState.催促Interval) {
+                clearInterval(gameState.催促Interval);
+            }
+            
+            startGame();
+        }
+
+function shareTwitter() {
+            const time = document.getElementById('resultTime').textContent;
+            const bestMessage = document.getElementById('bestMessage').textContent; 
+            const text = `上司を${time}で撃破！\n一番効いた一言は${bestMessage}でした。\n#サンドバッグマイボス`;
+            
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+
+        function shareFacebook() {
+            const url = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.href);
+            window.open(url, '_blank');
+        }
+
+        function shareLine() {
+            const time = document.getElementById('resultTime').textContent;
+            const bestMessage = document.getElementById('bestMessage').textContent;            
+            const text = `上司を${time}で撃破！\n一番効いた一言は${bestMessage}でした。`;
+            const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+        startGame();
+    </script>
+</body>
+</html>
