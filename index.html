@@ -951,7 +951,7 @@
 function shareTwitter() {
             const time = document.getElementById('resultTime').textContent;
             const bestMessage = document.getElementById('bestMessage').textContent; 
-            const text = `上司を${time}で撃破！\n一番効いた一言は${bestMessage}でした。\n#サンドバッグマイボス`;
+            const text = `上司を${time}で撃破！\n一番効いた一言は${bestMessage}でした。\n#サンドバッグマイボス\nhttps://a12205005.github.io/SandBag_MyBoss/`;
             
             const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
             window.open(url, '_blank');
@@ -965,7 +965,7 @@ function shareTwitter() {
         function shareLine() {
             const time = document.getElementById('resultTime').textContent;
             const bestMessage = document.getElementById('bestMessage').textContent;            
-            const text = `上司を${time}で撃破！\n一番効いた一言は${bestMessage}でした。`;
+            const text = `上司を${time}で撃破！\n一番効いた一言は${bestMessage}でした。\nサンドバッグマイボス\nhttps://a12205005.github.io/SandBag_MyBoss/`;
             const url = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(text)}`;
             window.open(url, '_blank');
         }
